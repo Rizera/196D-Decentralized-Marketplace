@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.0;
 
-contract ProjectContract {
+contract baseContract {
     struct Item {
         uint itemId;
         address owner;
