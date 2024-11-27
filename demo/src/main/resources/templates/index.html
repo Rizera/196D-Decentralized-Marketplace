@@ -1,18 +1,188 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta http-equiv="X-UA-Compatible" content="ie=edge">
-    <title>My Website</title>
-    <link rel="stylesheet" href="./style.css">
-    <link rel="icon" href="./favicon.ico" type="image/x-icon">
+    <title>Smart Contract Interaction</title>
+    <script src="https://cdn.jsdelivr.net/npm/web3@1.8.0/dist/web3.min.js"></script>
+    <script>
+        let web3;
+        let contract;
+
+        if (window.ethereum) {
+            web3 = new Web3(window.ethereum);
+            window.ethereum.request({ method: 'eth_requestAccounts' });
+        } else {
+            alert('Please install MetaMask or another Ethereum wallet!');
+        }
+
+        async function loadContract() {
+            try {
+                // Fetch the JSON file containing the contract ABI
+                const response = await fetch('/baseContract.json');
+                const contractData = await response.json();
+
+                // Extract the ABI and address
+                const abi = contractData.abi;
+                const contractAddress = "0xA81a55DC7Ae090a61cB978205D5bbBE80a6C003c"; // Replace with your deployed contract address
+
+                // Create the contract instance
+                contract = new web3.eth.Contract(abi, contractAddress);
+                console.log('Contract loaded:', contract);
+            } catch (error) {
+                console.error('Error loading contract:', error);
+            }
+        }
+
+        // Set Listing
+        async function setListing() {
+            const itemId = document.getElementById("set-item-id").value;
+            const price = document.getElementById("set-item-price").value;
+            const accounts = await web3.eth.getAccounts();
+
+            try {
+                await contract.methods.setListing(itemId, price).send({ from: accounts[0] });
+                document.getElementById("set-listing-status").textContent = `Listing set for Item ID ${itemId} at Price ${price} wei.`;
+            } catch (error) {
+                document.getElementById("set-listing-status").textContent = "Error: " + error.message;
+            }
+        }
+
+        // Get Listing
+        async function getListing() {
+            const itemId = document.getElementById("get-item-id").value;
+
+            try {
+                const listing = await contract.methods.getListing(itemId).call();
+                const resultText = `
+                    Item ID: ${listing.itemId},
+                    Owner: ${listing.owner},
+                    Price: ${listing.price} wei,
+                    Available: ${listing.available}
+                `;
+                document.getElementById("get-listing-status").textContent = resultText;
+            } catch (error) {
+                document.getElementById("get-listing-status").textContent = "Error: " + error.message;
+            }
+        }
+
+        // Buy Item
+        async function buyItem() {
+            const itemId = document.getElementById("buy-item-id").value;
+            const price = document.getElementById("buy-item-price").value;
+            const accounts = await web3.eth.getAccounts();
+
+            try {
+                await contract.methods.buyItem(itemId).send({ from: accounts[0], value: price });
+                document.getElementById("buy-item-status").textContent = `Successfully bought Item ID ${itemId} for ${price} wei.`;
+            } catch (error) {
+                document.getElementById("buy-item-status").textContent = "Error: " + error.message;
+            }
+        }
+
+        // Place Bid
+        async function placeBid() {
+            const itemId = document.getElementById("bid-item-id").value;
+            const bidAmount = document.getElementById("bid-amount").value;
+            const accounts = await web3.eth.getAccounts();
+
+            try {
+                await contract.methods.setBid(itemId).send({ from: accounts[0], value: bidAmount });
+                document.getElementById("bid-status").textContent = `Bid of ${bidAmount} wei placed on Item ID ${itemId}.`;
+            } catch (error) {
+                document.getElementById("bid-status").textContent = "Error: " + error.message;
+            }
+        }
+
+        // Start Auction
+        async function startAuction() {
+            const itemId = document.getElementById("start-auction-item-id").value;
+            const accounts = await web3.eth.getAccounts();
+
+            try {
+                await contract.methods.startAuction(itemId).send({ from: accounts[0] });
+                document.getElementById("auction-status").textContent = `Auction started for Item ID ${itemId}.`;
+            } catch (error) {
+                document.getElementById("auction-status").textContent = "Error: " + error.message;
+            }
+        }
+
+        // End Auction
+        async function endAuction() {
+            const itemId = document.getElementById("end-auction-item-id").value;
+            const accounts = await web3.eth.getAccounts();
+
+            try {
+                await contract.methods.endAuction(itemId).send({ from: accounts[0] });
+                document.getElementById("auction-end-status").textContent = `Auction ended for Item ID ${itemId}.`;
+            } catch (error) {
+                document.getElementById("auction-end-status").textContent = "Error: " + error.message;
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', loadContract);
+    </script>
 </head>
 <body>
-<main>
-    <h1>196 Auction</h1>
-    <a href="/listing">Listing 1</a> <!-- Added link to Listing 1 -->
-</main>
-<script src="index.js"></script>
+<h1>Smart Contract Interaction</h1>
+
+<!-- Set Listing -->
+<h2>Set Listing</h2>
+<form onsubmit="event.preventDefault(); setListing();">
+    <label for="set-item-id">Item ID:</label>
+    <input type="number" id="set-item-id" required><br>
+    <label for="set-item-price">Price (wei):</label>
+    <input type="number" id="set-item-price" required><br>
+    <button type="submit">Set Listing</button>
+</form>
+<p id="set-listing-status"></p>
+
+<!-- Get Listing -->
+<h2>Get Listing</h2>
+<form onsubmit="event.preventDefault(); getListing();">
+    <label for="get-item-id">Item ID:</label>
+    <input type="number" id="get-item-id" required><br>
+    <button type="submit">Get Listing</button>
+</form>
+<p id="get-listing-status"></p>
+
+<!-- Buy Item -->
+<h2>Buy Item</h2>
+<form onsubmit="event.preventDefault(); buyItem();">
+    <label for="buy-item-id">Item ID:</label>
+    <input type="number" id="buy-item-id" required><br>
+    <label for="buy-item-price">Price (wei):</label>
+    <input type="number" id="buy-item-price" required><br>
+    <button type="submit">Buy Item</button>
+</form>
+<p id="buy-item-status"></p>
+
+<!-- Place Bid -->
+<h2>Place Bid</h2>
+<form onsubmit="event.preventDefault(); placeBid();">
+    <label for="bid-item-id">Item ID:</label>
+    <input type="number" id="bid-item-id" required><br>
+    <label for="bid-amount">Bid Amount (wei):</label>
+    <input type="number" id="bid-amount" required><br>
+    <button type="submit">Place Bid</button>
+</form>
+<p id="bid-status"></p>
+
+<!-- Start Auction -->
+<h2>Start Auction</h2>
+<form onsubmit="event.preventDefault(); startAuction();">
+    <label for="start-auction-item-id">Item ID:</label>
+    <input type="number" id="start-auction-item-id" required><br>
+    <button type="submit">Start Auction</button>
+</form>
+<p id="auction-status"></p>
+
+<!-- End Auction -->
+<h2>End Auction</h2>
+<form onsubmit="event.preventDefault(); endAuction();">
+    <label for="end-auction-item-id">Item ID:</label>
+    <input type="number" id="end-auction-item-id" required><br>
+    <button type="submit">End Auction</button>
+</form>
+<p id="auction-end-status"></p>
+
 </body>
 </html>
